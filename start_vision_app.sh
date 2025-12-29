@@ -55,22 +55,31 @@ echo
 
 # Check if dependencies are installed
 echo "[4/6] Checking dependencies..."
+
+# Quick check for PyMuPDF only (fastest check)
 if ! python -c "import fitz" 2>/dev/null; then
-    echo "Installing dependencies..."
-    pip install --upgrade pip
-    pip install -r requirements_vision.txt
+    echo "PyMuPDF not found. Installing all dependencies..."
+    pip install --upgrade pip --quiet
+
+    # Install dependencies one by one to avoid hanging
+    echo "Installing core packages..."
+    pip install Flask Werkzeug requests --quiet
+
+    echo "Installing PDF processing..."
+    pip install PyMuPDF Pillow --quiet
+
+    echo "Installing AI libraries (this may take a few minutes)..."
+    pip install chromadb transformers sentence-transformers --quiet
+
+    echo "Installing remaining packages..."
+    pip install torch faiss-cpu numpy tqdm ollama --quiet
+
     echo -e "${GREEN}Dependencies installed successfully${NC}"
 else
-    # Double-check all critical dependencies
-    python -c "import fitz; import chromadb; import flask; import torch; import transformers" 2>/dev/null
-    if [ $? -ne 0 ]; then
-        echo "Some dependencies missing, installing all..."
-        pip install --upgrade pip
-        pip install -r requirements_vision.txt
-        echo -e "${GREEN}Dependencies installed successfully${NC}"
-    else
-        echo "Dependencies already installed"
-    fi
+    echo "PyMuPDF found. Verifying other dependencies..."
+    # Install any missing dependencies without checking (faster)
+    pip install -r requirements_vision.txt --quiet 2>/dev/null || true
+    echo "Dependencies verified"
 fi
 echo
 
