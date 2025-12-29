@@ -463,19 +463,21 @@ Question: {question}
 Answer:"""
 
             payload = {
-                "model": self.model_name.replace('-vision', ''),  # Use text-only model
+                "model": self.model_name,  # Use same vision model (can answer text too)
                 "prompt": prompt,
                 "stream": False,
                 "options": {
                     "num_predict": 500,
-                    "temperature": 0.7
+                    "temperature": 0.7,
+                    "num_ctx": 2048,  # Smaller context for faster response
+                    "num_thread": 8
                 }
             }
 
             response = requests.post(
                 f"{self.ollama_url}/api/generate",
                 json=payload,
-                timeout=60
+                timeout=None  # No timeout
             )
 
             if response.status_code == 200:
