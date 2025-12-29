@@ -1,0 +1,77 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+venv/
+env/
+ENV/
+*.egg-info/
+dist/
+build/
+
+# Virtual Environments
+venv/
+ENV/
+env/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.claude/
+
+# Application specific - Runtime data
+uploads/
+data/
+logs/
+*.pkl
+*.faiss
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+logs/performance.txt
+
+# Environment variables
+.env
+.env.local
+
+# Model cache and downloaded models (IMPORTANT: Don't upload large models)
+.cache/
+models/
+gpt2/
+gpt2-medium/
+gpt2-large/
+gpt2-xl/
+distilbert*/
+roberta*/
+bert*/
+t5*/
+flan*/
+gemma*/
+llama*/
+mistral*/
+*.bin
+*.safetensors
+*.gguf
+*.h5
+*.onnx
+*.pb
+pytorch_model.bin
+model.safetensors
+*.msgpack
+
+# Deployment artifacts
+*.tar.gz
+*.zip
+pdf-qa-deploy/
+
+# Windows specific
+*.bat

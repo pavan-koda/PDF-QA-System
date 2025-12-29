@@ -1,0 +1,5 @@
+{
+  "embedding_model": "all-MiniLM-L6-v2",
+  "qa_model": "extractive",
+  "generator_model": "gpt2"
+}
