@@ -171,7 +171,7 @@ class VisionQAEngine:
         query: str,
         image_path: str,
         context: str = "",
-        max_tokens: int = 800
+        max_tokens: int = 2000  # Increased for longer, comprehensive answers
     ) -> str:
         """
         Ask question about an image using Llama 3.2-Vision.
@@ -180,7 +180,7 @@ class VisionQAEngine:
             query: Question to ask
             image_path: Path to image
             context: Additional text context
-            max_tokens: Maximum response length
+            max_tokens: Maximum response length (up to 2000 for detailed answers)
 
         Returns:
             Answer from vision model
@@ -190,10 +190,37 @@ class VisionQAEngine:
             with open(image_path, 'rb') as f:
                 image_data = base64.b64encode(f.read()).decode('utf-8')
 
-            # Build prompt
-            prompt = query
+            # Build detailed prompt for comprehensive answers
             if context:
-                prompt = f"Context: {context}\n\nQuestion: {query}"
+                prompt = f"""You are analyzing a page from a PDF document. Provide a comprehensive, detailed answer.
+
+Document Context:
+{context}
+
+Question: {query}
+
+Instructions:
+- Provide a thorough, detailed answer (aim for 3-5 paragraphs if the question requires it)
+- If you see diagrams, charts, or images in the page, describe them in detail
+- Explain visual elements like flowcharts, architecture diagrams, data visualizations, tables
+- Include specific details from both the image and text
+- Use clear, structured formatting when appropriate
+- Be comprehensive but focused on answering the question
+
+Answer:"""
+            else:
+                prompt = f"""Analyze this image from a PDF and answer the question in detail.
+
+Question: {query}
+
+Instructions:
+- Provide a detailed, comprehensive answer
+- Describe any visual elements you see (diagrams, charts, images, tables, graphs)
+- Include specific details you observe
+- Structure your answer clearly
+- Aim for a thorough explanation
+
+Answer:"""
 
             # Call Ollama API
             payload = {
@@ -203,7 +230,8 @@ class VisionQAEngine:
                 "stream": False,
                 "options": {
                     "num_predict": max_tokens,
-                    "temperature": 0.7
+                    "temperature": 0.7,
+                    "top_p": 0.9
                 }
             }
 
