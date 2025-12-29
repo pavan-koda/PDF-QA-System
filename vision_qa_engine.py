@@ -318,18 +318,30 @@ Answer:"""
                     if doc:
                         context += doc + "\n\n"
 
-            # Query vision model
-            if use_vision:
+            # Smart detection: Only use vision if question asks about visual elements
+            # or if text is insufficient
+            vision_keywords = ['image', 'picture', 'photo', 'diagram', 'chart', 'graph',
+                             'table', 'figure', 'illustration', 'drawing', 'visual', 'show']
+            needs_vision = use_vision and (
+                any(keyword in question.lower() for keyword in vision_keywords) or
+                len(context.strip()) < 100  # Very little text, probably visual content
+            )
+
+            # Query vision model only if needed
+            if needs_vision:
+                logger.info(f"Using VISION mode (detected visual content needed)")
                 answer = self.query_with_vision(question, image_path, context)
 
                 # If vision model fails, use text-only fallback
                 if not answer and context:
+                    logger.info(f"Vision failed, falling back to text-only mode")
                     answer = self._text_only_answer(question, context)
 
                 return answer if answer else "I couldn't generate an answer."
 
             else:
-                # Text-only mode
+                # Text-only mode (FAST!)
+                logger.info(f"Using TEXT-ONLY mode (no visual content needed - FAST)")
                 return self._text_only_answer(question, context)
 
         except Exception as e:
