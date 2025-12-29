@@ -21,7 +21,7 @@ QA_CONFIG = {
     'top_k_chunks': 10,
 
     # Maximum answer length
-    'max_answer_length': 1200,
+    'max_answer_length': 3000,
 }
 
 # Embedding Model Configuration

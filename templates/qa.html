@@ -179,6 +179,86 @@
             font-size: 0.9em;
             border-left: 4px solid #ff9800;
         }
+        .images-section {
+            background: white;
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+        }
+        .images-section h3 {
+            margin-top: 0;
+            color: #333;
+        }
+        .images-gallery {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 15px;
+            margin-top: 15px;
+        }
+        .image-card {
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            overflow: hidden;
+            transition: transform 0.3s, box-shadow 0.3s;
+            cursor: pointer;
+        }
+        .image-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+        }
+        .image-card img {
+            width: 100%;
+            height: 150px;
+            object-fit: contain;
+            background: #f5f5f5;
+        }
+        .image-info {
+            padding: 10px;
+            background: #f9f9f9;
+            font-size: 0.85em;
+            text-align: center;
+            color: #666;
+        }
+        .no-images {
+            text-align: center;
+            padding: 30px;
+            color: #999;
+            font-style: italic;
+        }
+        .image-modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.9);
+            overflow: auto;
+        }
+        .modal-content {
+            margin: auto;
+            display: block;
+            max-width: 90%;
+            max-height: 90%;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+        }
+        .close-modal {
+            position: absolute;
+            top: 20px;
+            right: 40px;
+            color: #fff;
+            font-size: 40px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+        .close-modal:hover {
+            color: #ccc;
+        }
     </style>
 </head>
 <body>
@@ -199,6 +279,14 @@
             <!-- Model Info -->
             <div class="model-info" id="model-info">
                 <strong>Active Models:</strong> {{ embedding_model }} | {{ qa_model }} | {{ generator_model }}
+            </div>
+
+            <!-- Images Section -->
+            <div class="images-section" id="images-section" style="display: none;">
+                <h3>📷 Extracted Images from PDF</h3>
+                <div class="images-gallery" id="images-gallery">
+                    <div class="no-images">Loading images...</div>
+                </div>
             </div>
 
             <!-- Chat History -->
@@ -228,6 +316,12 @@
         </div>
     </div>
 
+    <!-- Image Modal -->
+    <div id="image-modal" class="image-modal" onclick="closeImageModal()">
+        <span class="close-modal" onclick="closeImageModal()">&times;</span>
+        <img class="modal-content" id="modal-image">
+    </div>
+
     <script>
         const chatHistory = document.getElementById('chat-history');
         const questionInput = document.getElementById('question-input');
@@ -238,6 +332,61 @@
 
         let isProcessing = false;
         let questionCount = 0;
+
+        // Load images on page load
+        window.addEventListener('load', loadImages);
+
+        async function loadImages() {
+            try {
+                const response = await fetch('/images');
+                const data = await response.json();
+
+                if (response.ok && data.images && data.images.length > 0) {
+                    const imagesSection = document.getElementById('images-section');
+                    const imagesGallery = document.getElementById('images-gallery');
+
+                    imagesSection.style.display = 'block';
+                    imagesGallery.innerHTML = '';
+
+                    data.images.forEach(img => {
+                        const card = document.createElement('div');
+                        card.className = 'image-card';
+                        card.onclick = () => openImageModal(img.url);
+
+                        card.innerHTML = `
+                            <img src="${img.url}" alt="Page ${img.page}">
+                            <div class="image-info">Page ${img.page}</div>
+                        `;
+
+                        imagesGallery.appendChild(card);
+                    });
+                } else {
+                    // No images found, hide section
+                    document.getElementById('images-section').style.display = 'none';
+                }
+            } catch (error) {
+                console.error('Error loading images:', error);
+                document.getElementById('images-section').style.display = 'none';
+            }
+        }
+
+        function openImageModal(imageUrl) {
+            const modal = document.getElementById('image-modal');
+            const modalImg = document.getElementById('modal-image');
+            modal.style.display = 'block';
+            modalImg.src = imageUrl;
+        }
+
+        function closeImageModal() {
+            document.getElementById('image-modal').style.display = 'none';
+        }
+
+        // Close modal on Escape key
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') {
+                closeImageModal();
+            }
+        });
 
         // Ask question
         askBtn.addEventListener('click', askQuestion);

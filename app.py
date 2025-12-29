@@ -27,6 +27,7 @@ app.config['ALLOWED_EXTENSIONS'] = {'pdf'}
 os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
 os.makedirs('data', exist_ok=True)
 os.makedirs('logs', exist_ok=True)
+os.makedirs('images', exist_ok=True)
 
 # Initialize QA Engine with config
 try:
@@ -117,7 +118,11 @@ def upload_pdf():
         logger.info(f"PDF uploaded: {filepath}")
 
         # Process the PDF
-        pdf_processor = PDFProcessor()
+        pdf_processor = PDFProcessor(
+            chunk_size=PDF_CONFIG.get('chunk_size', 400),
+            chunk_overlap=PDF_CONFIG.get('chunk_overlap', 50),
+            extract_images=True
+        )
         text = pdf_processor.extract_text(filepath)
 
         if not text or len(text.strip()) < 10:
@@ -133,6 +138,17 @@ def upload_pdf():
 
         logger.info(f"Created {len(chunks)} chunks from PDF")
 
+        # Extract images from PDF
+        images_dir = os.path.join('images', session_id)
+        images_info = pdf_processor.extract_images(filepath, images_dir)
+        logger.info(f"Extracted {len(images_info)} images from PDF")
+
+        # Save images metadata with session
+        if images_info:
+            images_metadata_path = Path('data') / f"{session_id}_images.pkl"
+            with open(images_metadata_path, 'wb') as f:
+                pickle.dump(images_info, f)
+
         # Create embeddings and index
         qa_engine.create_index(chunks, session_id)
 
@@ -140,6 +156,7 @@ def upload_pdf():
         metadata = {
             'filename': filename,
             'num_chunks': len(chunks),
+            'num_images': len(images_info),
             'session_id': session_id
         }
 
@@ -252,6 +269,63 @@ def download_log():
     except Exception as e:
         logger.error(f"Error downloading log: {str(e)}")
         return jsonify({'error': f'Error downloading log: {str(e)}'}), 500
+
+@app.route('/images', methods=['GET'])
+def get_images():
+    """Get list of all images extracted from the uploaded PDF"""
+    try:
+        session_id = session.get('session_id')
+
+        if not session_id:
+            return jsonify({'error': 'No PDF uploaded'}), 400
+
+        # Load images metadata
+        images_metadata_path = Path('data') / f"{session_id}_images.pkl"
+
+        if not images_metadata_path.exists():
+            return jsonify({'images': []}), 200
+
+        with open(images_metadata_path, 'rb') as f:
+            images_info = pickle.load(f)
+
+        # Convert absolute paths to relative URLs
+        images_list = []
+        for img in images_info:
+            images_list.append({
+                'page': img['page'],
+                'filename': img['filename'],
+                'url': f"/image/{session_id}/{img['filename']}"
+            })
+
+        return jsonify({
+            'success': True,
+            'images': images_list,
+            'total': len(images_list)
+        }), 200
+
+    except Exception as e:
+        logger.error(f"Error getting images: {str(e)}")
+        return jsonify({'error': f'Error getting images: {str(e)}'}), 500
+
+@app.route('/image/<session_id>/<filename>')
+def serve_image(session_id, filename):
+    """Serve an extracted image"""
+    try:
+        # Security check: verify session_id matches current session
+        current_session_id = session.get('session_id')
+        if current_session_id != session_id:
+            return jsonify({'error': 'Unauthorized'}), 403
+
+        image_path = Path('images') / session_id / filename
+
+        if not image_path.exists():
+            return jsonify({'error': 'Image not found'}), 404
+
+        return send_file(image_path, mimetype='image/png')
+
+    except Exception as e:
+        logger.error(f"Error serving image: {str(e)}")
+        return jsonify({'error': f'Error serving image: {str(e)}'}), 500
 
 @app.route('/health', methods=['GET'])
 def health_check():

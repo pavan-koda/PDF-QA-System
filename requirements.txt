@@ -4,6 +4,7 @@ Werkzeug==3.0.1
 
 # PDF Processing
 pypdf==3.17.4
+Pillow>=10.0.0
 
 # Machine Learning & NLP
 torch>=2.2.0

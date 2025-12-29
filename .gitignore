@@ -28,6 +28,7 @@ env/
 uploads/
 data/
 logs/
+images/
 *.pkl
 *.faiss
 
