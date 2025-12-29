@@ -293,6 +293,24 @@ Answer:"""
             Answer string or dict with answer and images if return_images=True
         """
         try:
+            # Quick response for greetings and simple queries
+            greetings = ['hi', 'hello', 'hey', 'thanks', 'thank you', 'ok', 'okay']
+            if question.lower().strip() in greetings:
+                greeting_responses = {
+                    'hi': "Hello! I'm ready to help you with questions about your PDF. What would you like to know?",
+                    'hello': "Hi there! Ask me anything about the document you've uploaded.",
+                    'hey': "Hey! I'm here to answer questions about your PDF. What can I help you with?",
+                    'thanks': "You're welcome! Feel free to ask more questions.",
+                    'thank you': "You're welcome! I'm here to help with any other questions.",
+                    'ok': "Great! Let me know if you have any questions about the document.",
+                    'okay': "Perfect! Ask me anything about your PDF."
+                }
+                response = greeting_responses.get(question.lower().strip(), "Hello! How can I help you with this document?")
+
+                if return_images:
+                    return {'answer': response, 'images': [], 'page': None}
+                return response
+
             # Retrieve relevant pages
             relevant_pages = self._retrieve_pages(question, session_id, top_k)
 
