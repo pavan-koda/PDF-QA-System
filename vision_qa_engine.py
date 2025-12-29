@@ -275,8 +275,9 @@ Answer:"""
         session_id: str,
         top_k: int = 5,
         use_vision: bool = True,
-        use_text_context: bool = True
-    ) -> str:
+        use_text_context: bool = True,
+        return_images: bool = False
+    ):
         """
         Answer question using vision and text understanding.
 
@@ -286,9 +287,10 @@ Answer:"""
             top_k: Number of top pages to consider
             use_vision: Use vision model for answer
             use_text_context: Include text context
+            return_images: Return extracted images with answer
 
         Returns:
-            Answer string
+            Answer string or dict with answer and images if return_images=True
         """
         try:
             # Retrieve relevant pages
@@ -318,31 +320,73 @@ Answer:"""
                     if doc:
                         context += doc + "\n\n"
 
-            # Smart detection: Only use vision if question asks about visual elements
-            # or if text is insufficient
-            vision_keywords = ['image', 'picture', 'photo', 'diagram', 'chart', 'graph',
-                             'table', 'figure', 'illustration', 'drawing', 'visual', 'show']
-            needs_vision = use_vision and (
-                any(keyword in question.lower() for keyword in vision_keywords) or
-                len(context.strip()) < 100  # Very little text, probably visual content
-            )
+            # Smart detection: Decide if we need vision or text is enough
+            has_text = len(context.strip()) > 50  # Page has meaningful text content
 
-            # Query vision model only if needed
-            if needs_vision:
-                logger.info(f"Using VISION mode (detected visual content needed)")
+            # Check if question asks about visual elements
+            vision_keywords = ['image', 'picture', 'photo', 'diagram', 'chart', 'graph',
+                             'table', 'figure', 'illustration', 'drawing', 'visual', 'show',
+                             'look', 'see', 'display']
+            asks_about_visuals = any(keyword in question.lower() for keyword in vision_keywords)
+
+            # Use vision ONLY if:
+            # 1. Page has NO text (scanned PDF/image) - MUST use vision
+            # 2. Question asks about visual elements - use vision to see diagrams/charts
+            needs_vision = use_vision and (not has_text or asks_about_visuals)
+
+            # Collect extracted images from the page if requested
+            extracted_images = []
+            if return_images:
+                # Look for embedded images extracted from this page
+                from pathlib import Path
+                session_dir = Path("data") / session_id
+                embedded_dir = session_dir / "embedded_images"
+
+                if embedded_dir.exists():
+                    # Get images from the relevant page (all formats)
+                    import glob
+                    pattern = str(embedded_dir / f"page_{page_num:04d}_img_*.*")
+                    page_images = glob.glob(pattern)
+
+                    for img_path in page_images:
+                        # Convert to relative path for serving
+                        img_name = Path(img_path).name
+                        rel_path = f"/data/{session_id}/embedded_images/{img_name}"
+                        extracted_images.append(rel_path)
+
+            # Decide mode
+            if not has_text:
+                logger.info(f"Page has NO TEXT (scanned/image PDF) - Using VISION mode (required)")
+                answer = self.query_with_vision(question, image_path, context)
+                final_answer = answer if answer else "I couldn't generate an answer."
+
+                if return_images:
+                    return {'answer': final_answer, 'images': extracted_images, 'page': page_num}
+                return final_answer
+
+            elif asks_about_visuals and use_vision:
+                logger.info(f"Question asks about visuals - Using VISION mode")
                 answer = self.query_with_vision(question, image_path, context)
 
-                # If vision model fails, use text-only fallback
+                # If vision fails, fall back to text
                 if not answer and context:
-                    logger.info(f"Vision failed, falling back to text-only mode")
+                    logger.info(f"Vision failed, falling back to text-only")
                     answer = self._text_only_answer(question, context)
 
-                return answer if answer else "I couldn't generate an answer."
+                final_answer = answer if answer else "I couldn't generate an answer."
+
+                if return_images:
+                    return {'answer': final_answer, 'images': extracted_images, 'page': page_num}
+                return final_answer
 
             else:
-                # Text-only mode (FAST!)
-                logger.info(f"Using TEXT-ONLY mode (no visual content needed - FAST)")
-                return self._text_only_answer(question, context)
+                # Text-only mode (FAST!) - page has text and question is about text
+                logger.info(f"Page has text, using TEXT-ONLY mode - FAST (no vision needed)")
+                final_answer = self._text_only_answer(question, context)
+
+                if return_images:
+                    return {'answer': final_answer, 'images': extracted_images, 'page': page_num}
+                return final_answer
 
         except Exception as e:
             logger.error(f"Error answering question: {str(e)}")

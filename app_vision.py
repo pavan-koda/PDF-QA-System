@@ -222,21 +222,32 @@ def ask_question():
         start_time = time.time()
 
         # Generate answer
-        answer = qa_engine.answer_question(
+        result = qa_engine.answer_question(
             question=question,
             session_id=session_id,
             top_k=top_k,
             use_vision=use_vision,
-            use_text_context=True
+            use_text_context=True,
+            return_images=True  # Get images from relevant pages
         )
 
         response_time = time.time() - start_time
+
+        # Handle result (can be string or dict with images)
+        if isinstance(result, dict):
+            answer = result.get('answer', '')
+            images = result.get('images', [])
+            page_used = result.get('page', None)
+        else:
+            answer = result
+            images = []
+            page_used = None
 
         if not answer:
             return jsonify({'error': 'Could not generate an answer. Please try rephrasing your question.'}), 500
 
         # Log performance
-        page_info = f"Top {top_k} pages"
+        page_info = f"Page {page_used}" if page_used else f"Top {top_k} pages"
         log_performance(session_id, question, answer, response_time, page_info)
 
         logger.info(f"Answer generated in {response_time:.2f} seconds")
@@ -246,7 +257,9 @@ def ask_question():
             'answer': answer,
             'question': question,
             'response_time': round(response_time, 3),
-            'used_vision': use_vision
+            'used_vision': use_vision,
+            'images': images,  # Return extracted images
+            'page': page_used
         }), 200
 
     except Exception as e:
@@ -319,6 +332,22 @@ def download_log():
     except Exception as e:
         logger.error(f"Error downloading log: {str(e)}")
         return jsonify({'error': f'Error downloading log: {str(e)}'}), 500
+
+
+@app.route('/data/<session_id>/embedded_images/<filename>')
+def serve_image(session_id, filename):
+    """Serve extracted images from PDF."""
+    try:
+        image_path = Path('data') / session_id / 'embedded_images' / filename
+
+        if not image_path.exists():
+            return jsonify({'error': 'Image not found'}), 404
+
+        return send_file(image_path, mimetype='image/png')
+
+    except Exception as e:
+        logger.error(f"Error serving image: {str(e)}")
+        return jsonify({'error': f'Error serving image: {str(e)}'}), 500
 
 
 if __name__ == '__main__':
