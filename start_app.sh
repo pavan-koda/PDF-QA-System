@@ -90,7 +90,12 @@ fi
 # Check if config uses gated models (Gemma, Llama) that need HuggingFace auth
 NEEDS_AUTH=0
 if [ -f "config.py" ]; then
+    # Check in config.py file
     if grep -iq -E "gemma|llama" config.py; then
+        NEEDS_AUTH=1
+    fi
+    # Also check using Python to import the config
+    if python3 -c "from config import GENERATOR_CONFIG; model=GENERATOR_CONFIG.get('model_name',''); exit(0 if 'gemma' in model.lower() or 'llama' in model.lower() else 1)" 2>/dev/null; then
         NEEDS_AUTH=1
     fi
 fi
