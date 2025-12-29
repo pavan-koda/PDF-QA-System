@@ -14,11 +14,14 @@ QA_CONFIG = {
     # Advanced QA model to use if use_advanced_qa=True
     'advanced_qa_model': 'extractive',
 
-    # Number of top chunks to retrieve
-    'top_k_chunks': 5,
+    # Use full document context instead of just top chunks (better accuracy)
+    'use_full_context': True,
+
+    # Number of top chunks to retrieve (only used if use_full_context=False)
+    'top_k_chunks': 10,
 
     # Maximum answer length
-    'max_answer_length': 800,
+    'max_answer_length': 1200,
 }
 
 # Embedding Model Configuration
@@ -28,8 +31,8 @@ EMBEDDING_CONFIG = {
 
 # Generator Model Configuration
 GENERATOR_CONFIG = {
-    'model_name': 'gpt2',
-    'use_generator': True,
+    'model_name': 'none',
+    'use_generator': False,
 }
 
 # PDF Processing Configuration
