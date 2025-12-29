@@ -276,7 +276,8 @@ Answer:"""
         top_k: int = 5,
         use_vision: bool = True,
         use_text_context: bool = True,
-        return_images: bool = False
+        return_images: bool = False,
+        conversation_history: List[Dict] = None
     ):
         """
         Answer question using vision and text understanding.
@@ -288,6 +289,7 @@ Answer:"""
             use_vision: Use vision model for answer
             use_text_context: Include text context
             return_images: Return extracted images with answer
+            conversation_history: List of previous Q&A exchanges for context
 
         Returns:
             Answer string or dict with answer and images if return_images=True
@@ -310,6 +312,20 @@ Answer:"""
                 if return_images:
                     return {'answer': response, 'images': [], 'page': None}
                 return response
+
+            # Smart detection: Check if question has reference words
+            reference_words = ['that', 'it', 'those', 'this', 'them', 'what about',
+                             'tell me more', 'explain', 'details', 'more about', 'elaborate']
+            question_lower = question.lower()
+            has_reference = any(word in question_lower for word in reference_words)
+
+            # Use conversation history only if reference detected and history exists
+            use_history = has_reference and conversation_history and len(conversation_history) > 0
+
+            if use_history:
+                logger.info(f"Reference detected in question - using conversation history ({len(conversation_history)} exchanges)")
+            else:
+                logger.info("No reference detected or no history - processing as standalone question")
 
             # Retrieve relevant pages
             relevant_pages = self._retrieve_pages(question, session_id, top_k)
@@ -396,7 +412,9 @@ Answer:"""
                 # If vision fails, fall back to text
                 if not answer and context:
                     logger.info(f"Vision failed, falling back to text-only")
-                    answer = self._text_only_answer(question, context)
+                    # Pass history if we're using it
+                    history_to_use = conversation_history if use_history else None
+                    answer = self._text_only_answer(question, context, history_to_use)
 
                 final_answer = answer if answer else "I couldn't generate an answer."
 
@@ -407,7 +425,9 @@ Answer:"""
             else:
                 # Text-only mode (FAST!) - page has text and question is about text
                 logger.info(f"Page has text, using TEXT-ONLY mode - FAST (no vision needed)")
-                final_answer = self._text_only_answer(question, context)
+                # Pass history if we're using it
+                history_to_use = conversation_history if use_history else None
+                final_answer = self._text_only_answer(question, context, history_to_use)
 
                 if return_images:
                     return {'answer': final_answer, 'images': extracted_images, 'page': int(page_num)}
@@ -466,24 +486,33 @@ Answer:"""
             logger.error(f"Error retrieving pages: {str(e)}")
             return []
 
-    def _text_only_answer(self, question: str, context: str) -> str:
+    def _text_only_answer(self, question: str, context: str, conversation_history: List[Dict] = None) -> str:
         """
         Generate answer using text context only (no vision).
 
         Args:
             question: Question
             context: Text context
+            conversation_history: Previous Q&A exchanges for context
 
         Returns:
             Answer
         """
         try:
-            prompt = f"""Based on the following context, answer the question.
+            # Build conversation context if history provided
+            history_text = ""
+            if conversation_history and len(conversation_history) > 0:
+                history_text = "\nPrevious conversation:\n"
+                for i, exchange in enumerate(conversation_history, 1):
+                    history_text += f"Q{i}: {exchange['question']}\n"
+                    history_text += f"A{i}: {exchange['answer'][:200]}...\n\n"  # Limit answer length
 
-Context:
+            prompt = f"""Based on the following context, answer the question.
+{history_text}
+Context from document:
 {context}
 
-Question: {question}
+Current question: {question}
 
 Answer:"""
 

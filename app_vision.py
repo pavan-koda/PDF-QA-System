@@ -175,6 +175,7 @@ def upload_pdf():
             'session_id': session_id
         }
         session['metadata'] = metadata
+        session['conversation_history'] = []  # Initialize empty conversation history
 
         return jsonify({
             'success': True,
@@ -216,19 +217,23 @@ def ask_question():
         use_vision = data.get('use_vision', True)
         top_k = int(data.get('top_k', 5))
 
-        logger.info(f"Question: {question[:100]}... (use_vision={use_vision}, top_k={top_k})")
+        # Get conversation history from session (limit to last 5)
+        conversation_history = session.get('conversation_history', [])[-5:]
+
+        logger.info(f"Question: {question[:100]}... (use_vision={use_vision}, top_k={top_k}, history_len={len(conversation_history)})")
 
         # Track response time
         start_time = time.time()
 
-        # Generate answer
+        # Generate answer with conversation history
         result = qa_engine.answer_question(
             question=question,
             session_id=session_id,
             top_k=top_k,
             use_vision=use_vision,
             use_text_context=True,
-            return_images=True  # Get images from relevant pages
+            return_images=True,  # Get images from relevant pages
+            conversation_history=conversation_history  # Pass conversation context
         )
 
         response_time = time.time() - start_time
@@ -250,6 +255,21 @@ def ask_question():
         page_info = f"Page {page_used}" if page_used else f"Top {top_k} pages"
         log_performance(session_id, question, answer, response_time, page_info)
 
+        # Add to conversation history (limit to last 5 exchanges)
+        current_timestamp = datetime.now().strftime('%H:%M:%S')
+        if 'conversation_history' not in session:
+            session['conversation_history'] = []
+
+        session['conversation_history'].append({
+            'question': question,
+            'answer': answer,
+            'page': page_used,
+            'timestamp': current_timestamp
+        })
+
+        # Keep only last 5 exchanges
+        session['conversation_history'] = session['conversation_history'][-5:]
+
         logger.info(f"Answer generated in {response_time:.2f} seconds")
 
         return jsonify({
@@ -257,6 +277,7 @@ def ask_question():
             'answer': answer,
             'question': question,
             'response_time': round(response_time, 3),
+            'timestamp': datetime.now().strftime('%H:%M:%S'),  # Time-only format
             'used_vision': use_vision,
             'images': images,  # Return extracted images
             'page': page_used

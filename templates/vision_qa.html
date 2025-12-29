@@ -628,8 +628,9 @@
             const welcome = document.querySelector('.welcome-message');
             if (welcome) welcome.remove();
 
-            // Add user message
-            addMessage('user', question);
+            // Add user message with timestamp
+            const userTimestamp = new Date().toLocaleTimeString('en-US', {hour12: false});
+            addMessage('user', question, {timestamp: userTimestamp});
 
             // Clear input
             questionInput.value = '';
@@ -665,6 +666,7 @@
                     // Add assistant message with answer
                     addMessage('assistant', data.answer, {
                         responseTime: data.response_time,
+                        timestamp: data.timestamp,
                         usedVision: data.used_vision,
                         images: data.images || [],
                         page: data.page
@@ -748,10 +750,19 @@
                 const metaDiv = document.createElement('div');
                 metaDiv.className = 'message-meta';
                 metaDiv.innerHTML = `
-                    ⏱️ ${meta.responseTime}s
+                    ${meta.timestamp ? `🕐 ${meta.timestamp}` : ''}
+                    ${meta.responseTime ? ` | ⏱️ ${meta.responseTime}s` : ''}
                     ${meta.usedVision ? ' | 👁️ Vision AI used' : ' | ⚡ Text-only mode'}
                     ${meta.page ? ` | 📄 Page ${meta.page}` : ''}
                 `;
+                bubbleDiv.appendChild(metaDiv);
+            }
+
+            // Meta info for user messages (timestamp only)
+            if (type === 'user' && meta.timestamp) {
+                const metaDiv = document.createElement('div');
+                metaDiv.className = 'message-meta';
+                metaDiv.innerHTML = `🕐 ${meta.timestamp}`;
                 bubbleDiv.appendChild(metaDiv);
             }
 
