@@ -182,7 +182,7 @@ class PDFProcessor:
 
         return sentences
 
-    def extract_images(self, pdf_path: str, output_dir: str) -> List[Dict[str, any]]:
+    def extract_images(self, pdf_path: str, output_dir: str) -> List[Dict[str, Any]]:
         """
         Extract images from a PDF file.
 
