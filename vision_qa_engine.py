@@ -238,7 +238,7 @@ Answer:"""
             response = requests.post(
                 f"{self.ollama_url}/api/generate",
                 json=payload,
-                timeout=120  # 2 minute timeout for large images
+                timeout=300  # 5 minute timeout for vision processing on CPU
             )
 
             if response.status_code == 200:
