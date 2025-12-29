@@ -11,9 +11,10 @@ pypdf==3.17.4  # Backup PDF library
 Pillow==10.1.0  # Image processing
 
 # Vision and Multimodal AI
-# ColPali for visual document retrieval
-colpali-engine>=0.1.0  # Install from: pip install colpali-engine
-# Note: If colpali-engine is not available, it will fall back to CLIP
+# ColPali for visual document retrieval (OPTIONAL - will use CLIP fallback if not available)
+# Uncomment the line below if you want to try ColPali:
+# colpali-engine>=0.1.0
+# Note: If colpali-engine is not available, system will fall back to CLIP automatically
 
 # ChromaDB for multimodal vector storage
 chromadb==0.4.22

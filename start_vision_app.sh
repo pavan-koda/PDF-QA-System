@@ -55,13 +55,22 @@ echo
 
 # Check if dependencies are installed
 echo "[4/6] Checking dependencies..."
-if ! python -c "import flask" 2>/dev/null; then
+if ! python -c "import fitz" 2>/dev/null; then
     echo "Installing dependencies..."
     pip install --upgrade pip
     pip install -r requirements_vision.txt
     echo -e "${GREEN}Dependencies installed successfully${NC}"
 else
-    echo "Dependencies already installed"
+    # Double-check all critical dependencies
+    python -c "import fitz; import chromadb; import flask; import torch; import transformers" 2>/dev/null
+    if [ $? -ne 0 ]; then
+        echo "Some dependencies missing, installing all..."
+        pip install --upgrade pip
+        pip install -r requirements_vision.txt
+        echo -e "${GREEN}Dependencies installed successfully${NC}"
+    else
+        echo "Dependencies already installed"
+    fi
 fi
 echo
 
