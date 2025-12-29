@@ -14,6 +14,34 @@ logger = logging.getLogger(__name__)
 
 # Model configurations
 MODELS = {
+    "vision_models": {
+        "llama3.2-vision": {
+            "name": "Llama 3.2-Vision 11B (Recommended for PDFs)",
+            "size": "~7GB via Ollama",
+            "speed": "Medium",
+            "quality": "Exceptional",
+            "description": "Best for PDFs with diagrams, charts, images - understands visual layout",
+            "default": True,
+            "requires_ollama": True,
+            "ollama_command": "ollama pull llama3.2-vision:11b"
+        },
+        "llama3.2-vision-90b": {
+            "name": "Llama 3.2-Vision 90B",
+            "size": "~55GB via Ollama",
+            "speed": "Slow",
+            "quality": "Best-in-class",
+            "description": "Ultimate quality for complex documents (requires 64GB+ RAM)",
+            "requires_ollama": True,
+            "ollama_command": "ollama pull llama3.2-vision:90b"
+        },
+        "colpali-only": {
+            "name": "ColPali Visual Retriever Only",
+            "size": "~1GB",
+            "speed": "Very Fast",
+            "quality": "Good for retrieval",
+            "description": "Fast visual retrieval without LLM - good for search only"
+        }
+    },
     "embeddings": {
         "all-MiniLM-L6-v2": {
             "name": "MiniLM (Recommended)",
