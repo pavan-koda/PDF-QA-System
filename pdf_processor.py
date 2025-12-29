@@ -1,6 +1,6 @@
 import logging
 from pathlib import Path
-from typing import List, Optional, Dict, Tuple
+from typing import List, Optional, Dict, Tuple, Any
 import re
 import io
 from PIL import Image

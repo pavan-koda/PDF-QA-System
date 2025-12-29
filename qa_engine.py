@@ -475,6 +475,35 @@ class QAEngine:
             logger.error(f"Error with advanced QA model: {str(e)}")
             return None
 
+    def _preserve_list_formatting(self, text: str) -> str:
+        """
+        Preserve and enhance list formatting in text.
+
+        Args:
+            text: Text that may contain lists
+
+        Returns:
+            Text with improved list formatting
+        """
+        # Detect and format bullet points
+        # Common patterns: • - * · ○ □
+        text = re.sub(r'\s*[•\-\*·○□]\s+', '\n• ', text)
+
+        # Detect numbered lists (1. 2. 3. or 1) 2) 3))
+        text = re.sub(r'\s+(\d+)[.)\]]\s+', r'\n\1. ', text)
+
+        # Detect lettered lists (a. b. c. or a) b) c))
+        text = re.sub(r'\s+([a-z])[.)\]]\s+', r'\n\1. ', text)
+
+        # Clean up excessive newlines
+        text = re.sub(r'\n{3,}', '\n\n', text)
+
+        # Ensure lists start on new line
+        text = re.sub(r'([.!?:])\s*\n•', r'\1\n\n•', text)
+        text = re.sub(r'([.!?:])\s*\n(\d+\.)', r'\1\n\n\2', text)
+
+        return text.strip()
+
     def _smart_truncate(self, text: str, question: str, max_length: int) -> str:
         """
         Smart truncation that tries to keep text relevant to the question.
@@ -552,11 +581,11 @@ class QAEngine:
             # Check if question is asking for specific information
             specific_answer = self._extract_specific_info_from_text(full_text, question_lower)
             if specific_answer:
-                return specific_answer
+                return self._preserve_list_formatting(specific_answer)
 
             # Use smart extraction based on question keywords
             answer = self._extract_relevant_section(full_text, question_lower)
-            return answer
+            return self._preserve_list_formatting(answer)
 
         # Original chunked approach for backward compatibility
         # Check if question is asking for specific information

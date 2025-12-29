@@ -118,10 +118,13 @@ def upload_pdf():
         logger.info(f"PDF uploaded: {filepath}")
 
         # Process the PDF
+        # Check if user wants to extract images (default: False)
+        extract_images = request.form.get('extract_images', 'false').lower() == 'true'
+
         pdf_processor = PDFProcessor(
             chunk_size=PDF_CONFIG.get('chunk_size', 400),
             chunk_overlap=PDF_CONFIG.get('chunk_overlap', 50),
-            extract_images=True
+            extract_images=extract_images
         )
         text = pdf_processor.extract_text(filepath)
 

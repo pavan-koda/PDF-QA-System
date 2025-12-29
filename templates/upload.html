@@ -120,6 +120,12 @@
                     <p><strong>Selected:</strong> <span id="filename"></span></p>
                     <p><strong>Size:</strong> <span id="filesize"></span></p>
                     <div style="margin-top: 15px;">
+                        <label style="display: block; margin-bottom: 10px;">
+                            <input type="checkbox" id="extract-images-checkbox" style="margin-right: 8px;">
+                            Extract images from PDF (slower processing)
+                        </label>
+                    </div>
+                    <div style="margin-top: 15px;">
                         <button class="btn btn-success" id="upload-btn">Upload & Process PDF</button>
                         <button class="btn btn-secondary" id="cancel-btn" style="margin-left: 10px;">Cancel</button>
                     </div>
@@ -213,6 +219,10 @@
             const formData = new FormData();
             formData.append('pdf_file', selectedFile);
 
+            // Add image extraction preference
+            const extractImages = document.getElementById('extract-images-checkbox').checked;
+            formData.append('extract_images', extractImages ? 'true' : 'false');
+
             fileInfo.style.display = 'none';
             processingStatus.style.display = 'block';
             messageContainer.innerHTML = '';
@@ -226,7 +236,11 @@
                 const data = await response.json();
 
                 if (response.ok && data.success) {
-                    showMessage(`✓ Success! Created ${data.metadata.num_chunks} text chunks from your PDF.`, 'success');
+                    let message = `✓ Success! Created ${data.metadata.num_chunks} text chunks from your PDF.`;
+                    if (data.metadata.num_images > 0) {
+                        message += ` Extracted ${data.metadata.num_images} images.`;
+                    }
+                    showMessage(message, 'success');
                     setTimeout(() => {
                         window.location.href = '/qa';
                     }, 1500);
