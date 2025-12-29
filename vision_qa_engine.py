@@ -186,9 +186,23 @@ class VisionQAEngine:
             Answer from vision model
         """
         try:
-            # Encode image to base64
-            with open(image_path, 'rb') as f:
-                image_data = base64.b64encode(f.read()).decode('utf-8')
+            # Resize image for faster processing (max 1024px on longest side)
+            img = Image.open(image_path)
+            max_size = 1024
+            if max(img.size) > max_size:
+                ratio = max_size / max(img.size)
+                new_size = tuple(int(dim * ratio) for dim in img.size)
+                img = img.resize(new_size, Image.Resampling.LANCZOS)
+
+                # Save resized image temporarily
+                import io
+                img_byte_arr = io.BytesIO()
+                img.save(img_byte_arr, format='PNG')
+                image_data = base64.b64encode(img_byte_arr.getvalue()).decode('utf-8')
+            else:
+                # Use original image
+                with open(image_path, 'rb') as f:
+                    image_data = base64.b64encode(f.read()).decode('utf-8')
 
             # Build detailed prompt for comprehensive answers
             if context:
@@ -222,7 +236,7 @@ Instructions:
 
 Answer:"""
 
-            # Call Ollama API
+            # Call Ollama API with optimizations for speed
             payload = {
                 "model": self.model_name,
                 "prompt": prompt,
@@ -231,7 +245,10 @@ Answer:"""
                 "options": {
                     "num_predict": max_tokens,
                     "temperature": 0.7,
-                    "top_p": 0.9
+                    "top_p": 0.9,
+                    "num_ctx": 2048,  # Smaller context window for faster processing
+                    "num_thread": 8,  # Use 8 CPU threads
+                    "num_gpu": 0  # CPU only (set to 1 if you have GPU)
                 }
             }
 
