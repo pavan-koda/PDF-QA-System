@@ -342,17 +342,24 @@ Answer:"""
                 session_dir = Path("data") / session_id
                 embedded_dir = session_dir / "embedded_images"
 
+                logger.info(f"Looking for images in: {embedded_dir}")
+
                 if embedded_dir.exists():
                     # Get images from the relevant page (all formats)
                     import glob
                     pattern = str(embedded_dir / f"page_{page_num:04d}_img_*.*")
                     page_images = glob.glob(pattern)
 
+                    logger.info(f"Found {len(page_images)} images for page {page_num}")
+
                     for img_path in page_images:
                         # Convert to relative path for serving
                         img_name = Path(img_path).name
                         rel_path = f"/data/{session_id}/embedded_images/{img_name}"
                         extracted_images.append(rel_path)
+                        logger.info(f"Added image: {rel_path}")
+                else:
+                    logger.warning(f"Embedded images directory does not exist: {embedded_dir}")
 
             # Decide mode
             if not has_text:
