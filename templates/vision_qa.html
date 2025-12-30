@@ -778,7 +778,7 @@
             const modal = document.getElementById('imageModal');
             const modalImg = document.getElementById('modalImage');
             modalImg.src = imgPath;
-            modal.style.display = 'flex';
+            modal.classList.add('active');
         }
 
         async function resetSession() {
