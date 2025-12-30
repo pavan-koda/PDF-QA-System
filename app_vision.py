@@ -277,7 +277,7 @@ def ask_question():
             'answer': answer,
             'question': question,
             'response_time': round(response_time, 3),
-            'timestamp': datetime.now().strftime('%H:%M:%S'),  # Time-only format
+            # Don't send server timestamp - frontend will use client time
             'used_vision': use_vision,
             'images': images,  # Return extracted images
             'page': page_used
@@ -356,19 +356,35 @@ def download_log():
 
 
 @app.route('/data/<session_id>/embedded_images/<filename>')
-def serve_image(session_id, filename):
-    """Serve extracted images from PDF."""
+def serve_embedded_image(session_id, filename):
+    """Serve extracted embedded images from PDF."""
     try:
         image_path = Path('data') / session_id / 'embedded_images' / filename
 
         if not image_path.exists():
-            return jsonify({'error': 'Image not found'}), 404
+            return jsonify({'error': 'Embedded image not found'}), 404
 
         return send_file(image_path, mimetype='image/png')
 
     except Exception as e:
-        logger.error(f"Error serving image: {str(e)}")
-        return jsonify({'error': f'Error serving image: {str(e)}'}), 500
+        logger.error(f"Error serving embedded image: {str(e)}")
+        return jsonify({'error': f'Error serving embedded image: {str(e)}'}), 500
+
+
+@app.route('/data/<session_id>/page_images/<filename>')
+def serve_page_image(session_id, filename):
+    """Serve full page images (what vision model sees)."""
+    try:
+        image_path = Path('data') / session_id / 'page_images' / filename
+
+        if not image_path.exists():
+            return jsonify({'error': 'Page image not found'}), 404
+
+        return send_file(image_path, mimetype='image/png')
+
+    except Exception as e:
+        logger.error(f"Error serving page image: {str(e)}")
+        return jsonify({'error': f'Error serving page image: {str(e)}'}), 500
 
 
 if __name__ == '__main__':

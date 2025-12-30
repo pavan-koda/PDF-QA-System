@@ -368,15 +368,20 @@ Answer:"""
             # 2. Question asks about visual elements - use vision to see diagrams/charts
             needs_vision = use_vision and (not has_text or asks_about_visuals)
 
-            # Collect extracted images from the page if requested
+            # Collect images from the page if requested
             extracted_images = []
             if return_images:
-                # Look for embedded images extracted from this page
                 from pathlib import Path
                 session_dir = Path("data") / session_id
-                embedded_dir = session_dir / "embedded_images"
 
-                logger.info(f"Looking for images in: {embedded_dir}")
+                # First, always include the full page image (what vision model sees)
+                page_img_name = Path(image_path).name
+                page_img_rel = f"/data/{session_id}/page_images/{page_img_name}"
+                extracted_images.append(page_img_rel)
+                logger.info(f"Added page image: {page_img_rel}")
+
+                # Also look for embedded images extracted from this page
+                embedded_dir = session_dir / "embedded_images"
 
                 if embedded_dir.exists():
                     # Get images from the relevant page (all formats)
@@ -384,16 +389,14 @@ Answer:"""
                     pattern = str(embedded_dir / f"page_{page_num:04d}_img_*.*")
                     page_images = glob.glob(pattern)
 
-                    logger.info(f"Found {len(page_images)} images for page {page_num}")
+                    logger.info(f"Found {len(page_images)} embedded images for page {page_num}")
 
                     for img_path in page_images:
                         # Convert to relative path for serving
                         img_name = Path(img_path).name
                         rel_path = f"/data/{session_id}/embedded_images/{img_name}"
                         extracted_images.append(rel_path)
-                        logger.info(f"Added image: {rel_path}")
-                else:
-                    logger.warning(f"Embedded images directory does not exist: {embedded_dir}")
+                        logger.info(f"Added embedded image: {rel_path}")
 
             # Decide mode
             if not has_text:

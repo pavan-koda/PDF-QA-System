@@ -663,10 +663,11 @@
                 typingIndicator.classList.remove('active');
 
                 if (response.ok && data.success) {
-                    // Add assistant message with answer
+                    // Add assistant message with answer (use client time for accuracy)
+                    const assistantTimestamp = new Date().toLocaleTimeString('en-US', {hour12: false});
                     addMessage('assistant', data.answer, {
                         responseTime: data.response_time,
-                        timestamp: data.timestamp,
+                        timestamp: assistantTimestamp,  // Use client time, not server time
                         usedVision: data.used_vision,
                         images: data.images || [],
                         page: data.page
