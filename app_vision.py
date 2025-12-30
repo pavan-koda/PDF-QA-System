@@ -52,10 +52,11 @@ def allowed_file(filename):
 
 
 def log_performance(session_id, question, answer, response_time, page_info):
-    """Log performance metrics."""
+    """Log performance metrics with latest entries on top."""
     log_file = Path('logs') / 'vision_performance.txt'
     timestamp = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
 
+    # Create new log entry
     log_entry = f"""
 {'='*80}
 Session ID: {session_id}
@@ -69,8 +70,17 @@ Answer:
 
 """
 
-    with open(log_file, 'a', encoding='utf-8') as f:
+    # Read existing content if file exists
+    existing_content = ""
+    if log_file.exists():
+        with open(log_file, 'r', encoding='utf-8') as f:
+            existing_content = f.read()
+
+    # Write new entry at the top, followed by existing content
+    with open(log_file, 'w', encoding='utf-8') as f:
         f.write(log_entry)
+        if existing_content:
+            f.write(existing_content)
 
 
 @app.route('/')
