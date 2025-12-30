@@ -382,12 +382,13 @@ def serve_embedded_image(session_id, filename):
 
 @app.route('/data/<session_id>/<filename>')
 def serve_page_image(session_id, filename):
-    """Serve page images (stored directly in session directory)."""
+    """Serve page images (stored in processed_pdfs directory)."""
     try:
-        # Page images are stored directly in data/{session_id}/page_XXXX.png
-        image_path = Path('data') / session_id / filename
+        # Page images are stored in processed_pdfs/{session_id}/page_XXXX.png
+        image_path = Path('processed_pdfs') / session_id / filename
 
         if not image_path.exists():
+            logger.error(f"Page image not found: {image_path}")
             return jsonify({'error': 'Page image not found'}), 404
 
         return send_file(image_path, mimetype='image/png')
