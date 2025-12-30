@@ -52,20 +52,19 @@ def allowed_file(filename):
 
 
 def log_performance(session_id, question, answer, response_time, page_info):
-    """Log performance metrics with latest entries on top."""
+    """Log performance metrics with latest entries on top - simplified format."""
     log_file = Path('logs') / 'vision_performance.txt'
     timestamp = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
 
-    # Create new log entry
+    # Simplified log entry - only essential metrics, no full response
     log_entry = f"""
 {'='*80}
-Session ID: {session_id}
 Timestamp: {timestamp}
+Session ID: {session_id}
 Question: {question}
 Response Time: {response_time:.3f} seconds
 Pages Used: {page_info}
-Answer:
-{answer}
+Answer Length: {len(answer)} characters
 {'='*80}
 
 """
@@ -381,11 +380,12 @@ def serve_embedded_image(session_id, filename):
         return jsonify({'error': f'Error serving embedded image: {str(e)}'}), 500
 
 
-@app.route('/data/<session_id>/page_images/<filename>')
+@app.route('/data/<session_id>/<filename>')
 def serve_page_image(session_id, filename):
-    """Serve full page images (what vision model sees)."""
+    """Serve page images (stored directly in session directory)."""
     try:
-        image_path = Path('data') / session_id / 'page_images' / filename
+        # Page images are stored directly in data/{session_id}/page_XXXX.png
+        image_path = Path('data') / session_id / filename
 
         if not image_path.exists():
             return jsonify({'error': 'Page image not found'}), 404

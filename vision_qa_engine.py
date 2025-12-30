@@ -376,7 +376,8 @@ Answer:"""
 
                 # First, always include the full page image (what vision model sees)
                 page_img_name = Path(image_path).name
-                page_img_rel = f"/data/{session_id}/page_images/{page_img_name}"
+                # Page images are stored directly in session directory, not in page_images subdirectory
+                page_img_rel = f"/data/{session_id}/{page_img_name}"
                 extracted_images.append(page_img_rel)
                 logger.info(f"Added page image: {page_img_rel}")
 
